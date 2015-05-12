@@ -29,8 +29,7 @@ describe('TestRunner', function() {
         testPathDirs: []
       }));
     });
-
-    it('supports ../ paths and unix separators', function() {
+    xit('supports ../ paths and unix separators', function() {
       var path = '/path/to/__tests__/foo/bar/baz/../../../test.js';
       var isTestFile = runner._isTestFilePath(path);
 

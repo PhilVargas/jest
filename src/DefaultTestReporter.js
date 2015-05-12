@@ -63,9 +63,7 @@ function(config, testResult, aggregatedResults) {
   */
 
   function test(title, arr, memo){
-    if (typeof memo === 'undefined' || memo === null){ memo = {}; }
-    if (typeof memo.its === 'undefined' || memo.its === null){ memo.its = []; }
-    if (typeof memo.desc === 'undefined' || memo.desc === null){ memo.desc = {}; }
+    memo = memo || { its: [], desc: {} };
     if (arr.length === 0) {
       memo.its.push(title);
       return memo;
@@ -88,19 +86,22 @@ function(config, testResult, aggregatedResults) {
     return memo;
   }
 
-  function readTest(tree, count){
-    var key, outputText, outputColor
+  function readTest(tree, indentCount){
+    var outputText, outputColor
 
-    if (typeof count === 'undefined' || count === null){ count = 0; }
-    for (key in tree){
-      this.log(repeatChar("  ", count) + key);
+    indentCount = indentCount || 0;
+
+    for (var key in tree){
+      this.log(repeatChar("  ", indentCount) + key);
       for (var i = 0; i < tree[key].its.length; i++){
-        outputText = repeatChar("  ", count + 1) + tree[key].its[i].title;
-        outputColor = ( tree[key].its[i].failureMessages.length === 0 ? colors.GREEN : colors.RED);
+        outputText = repeatChar("  ", indentCount + 1) + tree[key].its[i].title;
+        outputColor = tree[key].its[i].failureMessages.length === 0
+          ? colors.GREEN
+          : colors.RED;
         this.log( this._formatMsg(outputText, outputColor) );
       }
       if (Object.keys(tree[key].desc).length > 0){
-        readTest.call(this, tree[key].desc, count + 1);
+        readTest.call(this, tree[key].desc, indentCount + 1);
       }
     }
   }
