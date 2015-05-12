@@ -62,9 +62,61 @@ function(config, testResult, aggregatedResults) {
   }
   */
 
-  this.log(this._getResultHeader(allTestsPassed, pathStr, [
-    testRunTimeString
-  ]));
+  function test(title, arr, memo){
+    if (typeof memo === 'undefined' || memo === null){ memo = {}; }
+    if (typeof memo.its === 'undefined' || memo.its === null){ memo.its = []; }
+    if (typeof memo.desc === 'undefined' || memo.desc === null){ memo.desc = {}; }
+    if (arr.length === 0) {
+      memo.its.push(title);
+      return memo;
+    } else {
+      if(typeof memo.desc[arr[0]] === 'undefined' || memo.desc[arr[0]] === null){
+        memo.desc[arr[0]] = { its: [], desc: {} };
+      }
+      test(title, arr.slice(1,arr.length), memo.desc[arr[0]]);
+    }
+    return memo;
+  }
+
+  function repeatChar(character, count){
+    var memo;
+
+    memo = '';
+    for (var i = 0; i < count; i++){
+      memo += character;
+    }
+    return memo;
+  }
+
+  function readTest(tree, count){
+    var key, outputText, outputColor
+
+    if (typeof count === 'undefined' || count === null){ count = 0; }
+    for (key in tree){
+      this.log(repeatChar("  ", count) + key);
+      for (var i = 0; i < tree[key].its.length; i++){
+        outputText = repeatChar("  ", count + 1) + tree[key].its[i].title;
+        outputColor = ( tree[key].its[i].failureMessages.length === 0 ? colors.GREEN : colors.RED);
+        this.log( this._formatMsg(outputText, outputColor) );
+      }
+      if (Object.keys(tree[key].desc).length > 0){
+        readTest.call(this, tree[key].desc, count + 1);
+      }
+    }
+  }
+
+  var results = testResult['testResults'];
+  var tmp;
+  if (config.verbose) {
+    for (var i = 0; i < results.length; i++){
+      tmp = test(results[i], results[i].ancestorTitles, tmp);
+    }
+    readTest.call(this, tmp.desc);
+  } else {
+    this.log(this._getResultHeader(allTestsPassed, pathStr, [
+      testRunTimeString
+    ]));
+  }
 
   testResult.logMessages.forEach(this._printConsoleMessage.bind(this));
 
