@@ -62,18 +62,18 @@ function(config, testResult, aggregatedResults) {
   }
   */
 
-  function test(title, arr, memo){
-    memo = memo || { its: [], desc: {} };
-    if (arr.length === 0) {
-      memo.its.push(title);
-      return memo;
+  function createTestNode(testResult, ancestorTitles, currentNode){
+    currentNode = currentNode || { testTitles: [], childNodes: {} };
+    if (ancestorTitles.length === 0) {
+      currentNode.testTitles.push(testResult);
+      return currentNode;
     } else {
-      if(typeof memo.desc[arr[0]] === 'undefined' || memo.desc[arr[0]] === null){
-        memo.desc[arr[0]] = { its: [], desc: {} };
+      if(!currentNode.childNodes[ancestorTitles[0]]){
+        currentNode.childNodes[ancestorTitles[0]] = { testTitles: [], childNodes: {} };
       }
-      test(title, arr.slice(1,arr.length), memo.desc[arr[0]]);
+      createTestNode(testResult, ancestorTitles.slice(1,ancestorTitles.length), currentNode.childNodes[ancestorTitles[0]]);
     }
-    return memo;
+    return currentNode;
   }
 
   function repeatChar(character, count){
@@ -93,15 +93,15 @@ function(config, testResult, aggregatedResults) {
 
     for (var key in tree){
       this.log(repeatChar("  ", indentCount) + key);
-      for (var i = 0; i < tree[key].its.length; i++){
-        outputText = repeatChar("  ", indentCount + 1) + tree[key].its[i].title;
-        outputColor = tree[key].its[i].failureMessages.length === 0
+      for (var i = 0; i < tree[key].testTitles.length; i++){
+        outputText = repeatChar("  ", indentCount + 1) + tree[key].testTitles[i].title;
+        outputColor = tree[key].testTitles[i].failureMessages.length === 0
           ? colors.GREEN
           : colors.RED;
         this.log( this._formatMsg(outputText, outputColor) );
       }
-      if (Object.keys(tree[key].desc).length > 0){
-        readTest.call(this, tree[key].desc, indentCount + 1);
+      if (Object.keys(tree[key].childNodes).length > 0){
+        readTest.call(this, tree[key].childNodes, indentCount + 1);
       }
     }
   }
@@ -110,9 +110,9 @@ function(config, testResult, aggregatedResults) {
   var tmp;
   if (config.verbose) {
     for (var i = 0; i < results.length; i++){
-      tmp = test(results[i], results[i].ancestorTitles, tmp);
+      tmp = createTestNode(results[i], results[i].ancestorTitles, tmp);
     }
-    readTest.call(this, tmp.desc);
+    readTest.call(this, tmp.childNodes);
   } else {
     this.log(this._getResultHeader(allTestsPassed, pathStr, [
       testRunTimeString
