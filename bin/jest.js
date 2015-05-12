@@ -110,6 +110,13 @@ var argv = optimist
       ),
       type: 'boolean'
     },
+    verbose: {
+      description: _wrapDesc(
+        'Display the pass / fail status of each individual test. Plus ' +
+        'some other helpful descriptions'
+      ),
+      type: 'boolean'
+    },
   })
   .check(function(argv) {
     if (argv.runInBand && argv.hasOwnProperty('maxWorkers')) {
