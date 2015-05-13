@@ -151,6 +151,75 @@ function getLinePercentCoverageFromCoverageInfo(coverageInfo) {
   return numCoveredLines / numMeasuredLines;
 }
 
+// prepend each node key with __? incase someone writes a test title of testTitles
+function VerboseTestResultsTree(testResults, logger, fmt){
+  this.testResults = testResults
+  this.log = logger
+  this._formatMsg = fmt
+}
+
+VerboseTestResultsTree.prototype.createTestNode = function(testResult, ancestorTitles, currentNode){
+  currentNode = currentNode || { testTitles: [], childNodes: {} };
+  if (ancestorTitles.length === 0) {
+    currentNode.testTitles.push(testResult);
+  } else {
+    if(!currentNode.childNodes[ancestorTitles[0]]){
+      currentNode.childNodes[ancestorTitles[0]] = { testTitles: [], childNodes: {} };
+    }
+    this.createTestNode(
+      testResult,
+      ancestorTitles.slice(1,ancestorTitles.length),
+      currentNode.childNodes[ancestorTitles[0]]
+    );
+  }
+
+  return currentNode;
+}
+
+VerboseTestResultsTree.prototype.createTestTree = function(){
+  var tree;
+  for (var i = 0; i < this.testResults.length; i++){
+    tree = this.createTestNode(this.testResults[i], this.testResults[i].ancestorTitles, tree);
+  }
+
+  return tree;
+}
+
+VerboseTestResultsTree.prototype.preOrder = function(node, indentation){
+  var indentationIncrement;
+  if (typeof node === 'undefined' || node === null){ return; }
+
+  indentationIncrement = '  ';
+  indentation = indentation || '';
+
+  if (Object.prototype.toString.call(node.testTitles) === '[object Array]'){
+    this.printTestTitles(node.testTitles, indentation);
+    this.preOrder(node.childNodes, indentation);
+  } else {
+    for (var key in node){
+      this.log(indentation + key);
+      this.preOrder(node[key], indentation + indentationIncrement);
+    }
+  }
+}
+
+VerboseTestResultsTree.prototype.printTestTitles = function(testTitles, indentation){
+  var outputColor;
+
+  for (var i = 0; i < testTitles.length; i++){
+    outputColor = testTitles[i].failureMessages.length === 0
+      ? colors.GREEN
+      : colors.RED;
+    // this.log(this._formatMsg(indentation + testTitles[i].title, outputColor));
+    this.log(this._formatMsg(indentation + testTitles[i].title, outputColor));
+  }
+}
+
+VerboseTestResultsTree.prototype.init = function(){
+  var tree = this.createTestTree()
+  this.preOrder(tree)
+}
+
 function normalizeConfig(config) {
   var newConfig = {};
 
@@ -444,3 +513,4 @@ exports.pathNormalize = pathNormalize;
 exports.readAndPreprocessFileContent = readAndPreprocessFileContent;
 exports.runContentWithLocalBindings = runContentWithLocalBindings;
 exports.formatFailureMessage = formatFailureMessage;
+exports.VerboseTestResultsTree = VerboseTestResultsTree;

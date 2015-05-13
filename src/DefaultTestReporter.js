@@ -9,6 +9,7 @@
 
 var colors = require('./lib/colors');
 var formatFailureMessage = require('./lib/utils').formatFailureMessage;
+var VerboseTestResultsTree = require('./lib/utils').VerboseTestResultsTree;
 var path = require('path');
 
 var FAIL_COLOR = colors.RED_BG + colors.BOLD;
@@ -63,65 +64,67 @@ function(config, testResult, aggregatedResults) {
   */
 
   // prepend each node key with __? incase someone writes a test title of testTitles
-  function createTestNode(testResult, ancestorTitles, currentNode){
-    currentNode = currentNode || { testTitles: [], childNodes: {} };
-    if (ancestorTitles.length === 0) {
-      currentNode.testTitles.push(testResult);
-    } else {
-      if(!currentNode.childNodes[ancestorTitles[0]]){
-        currentNode.childNodes[ancestorTitles[0]] = { testTitles: [], childNodes: {} };
-      }
-      createTestNode(
-        testResult,
-        ancestorTitles.slice(1,ancestorTitles.length),
-        currentNode.childNodes[ancestorTitles[0]]
-      );
-    }
-
-    return currentNode;
-  }
-
-  function createTestTree(results){
-    var tree;
-    for (var i = 0; i < results.length; i++){
-      tree = createTestNode(results[i], results[i].ancestorTitles, tree);
-    }
-
-    return tree;
-  }
-
-  function preOrder(node, indentation){
-    var indentationIncrement;
-    if (typeof node === 'undefined' || node === null){ return; }
-
-    indentationIncrement = '  ';
-    indentation = indentation || '';
-
-    if (node.testTitles){
-      printTestTitles.call(this, node.testTitles, indentation);
-      preOrder.call(this, node.childNodes, indentation);
-    } else {
-      for (var key in node){
-        this.log(indentation + key);
-        preOrder.call(this, node[key], indentation + indentationIncrement);
-      }
-    }
-  }
-
-  function printTestTitles(testTitles, indentation){
-    var outputColor;
-
-    for (var i = 0; i < testTitles.length; i++){
-      outputColor = testTitles[i].failureMessages.length === 0
-        ? colors.GREEN
-        : colors.RED;
-      this.log(this._formatMsg(indentation + testTitles[i].title, outputColor));
-    }
-  }
+  // function createTestNode(testResult, ancestorTitles, currentNode){
+  //   currentNode = currentNode || { testTitles: [], childNodes: {} };
+  //   if (ancestorTitles.length === 0) {
+  //     currentNode.testTitles.push(testResult);
+  //   } else {
+  //     if(!currentNode.childNodes[ancestorTitles[0]]){
+  //       currentNode.childNodes[ancestorTitles[0]] = { testTitles: [], childNodes: {} };
+  //     }
+  //     createTestNode(
+  //       testResult,
+  //       ancestorTitles.slice(1,ancestorTitles.length),
+  //       currentNode.childNodes[ancestorTitles[0]]
+  //     );
+  //   }
+  //
+  //   return currentNode;
+  // }
+  //
+  // function createTestTree(results){
+  //   var tree;
+  //   for (var i = 0; i < results.length; i++){
+  //     tree = createTestNode(results[i], results[i].ancestorTitles, tree);
+  //   }
+  //
+  //   return tree;
+  // }
+  //
+  // function preOrder(node, indentation){
+  //   var indentationIncrement;
+  //   if (typeof node === 'undefined' || node === null){ return; }
+  //
+  //   indentationIncrement = '  ';
+  //   indentation = indentation || '';
+  //
+  //   if (Object.prototype.toString.call(node.testTitles) === '[object Array]'){
+  //     printTestTitles.call(this, node.testTitles, indentation);
+  //     preOrder.call(this, node.childNodes, indentation);
+  //   } else {
+  //     for (var key in node){
+  //       this.log(indentation + key);
+  //       preOrder.call(this, node[key], indentation + indentationIncrement);
+  //     }
+  //   }
+  // }
+  //
+  // function printTestTitles(testTitles, indentation){
+  //   var outputColor;
+  //
+  //   for (var i = 0; i < testTitles.length; i++){
+  //     outputColor = testTitles[i].failureMessages.length === 0
+  //       ? colors.GREEN
+  //       : colors.RED;
+  //     this.log(this._formatMsg(indentation + testTitles[i].title, outputColor));
+  //   }
+  // }
 
   if (config.verbose) {
-    var tree = createTestTree(testResult['testResults']);
-    preOrder.call(this, tree.childNodes)
+    // var tree = createTestTree(testResult['testResults']);
+    // preOrder.call(this, tree.childNodes)
+    var verboseTestResultsTree = new VerboseTestResultsTree(testResult['testResults'], this.log.bind(this), this._formatMsg.bind(this))
+    verboseTestResultsTree.init()
   } else {
     this.log(this._getResultHeader(allTestsPassed, pathStr, [
       testRunTimeString
