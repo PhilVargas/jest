@@ -62,57 +62,66 @@ function(config, testResult, aggregatedResults) {
   }
   */
 
+  // prepend each node key with __? incase someone writes a test title of testTitles
   function createTestNode(testResult, ancestorTitles, currentNode){
     currentNode = currentNode || { testTitles: [], childNodes: {} };
     if (ancestorTitles.length === 0) {
       currentNode.testTitles.push(testResult);
-      return currentNode;
     } else {
       if(!currentNode.childNodes[ancestorTitles[0]]){
         currentNode.childNodes[ancestorTitles[0]] = { testTitles: [], childNodes: {} };
       }
-      createTestNode(testResult, ancestorTitles.slice(1,ancestorTitles.length), currentNode.childNodes[ancestorTitles[0]]);
+      createTestNode(
+        testResult,
+        ancestorTitles.slice(1,ancestorTitles.length),
+        currentNode.childNodes[ancestorTitles[0]]
+      );
     }
+
     return currentNode;
   }
 
-  function repeatChar(character, count){
-    var memo;
-
-    memo = '';
-    for (var i = 0; i < count; i++){
-      memo += character;
-    }
-    return memo;
-  }
-
-  function readTest(tree, indentCount){
-    var outputText, outputColor
-
-    indentCount = indentCount || 0;
-
-    for (var key in tree){
-      this.log(repeatChar("  ", indentCount) + key);
-      for (var i = 0; i < tree[key].testTitles.length; i++){
-        outputText = repeatChar("  ", indentCount + 1) + tree[key].testTitles[i].title;
-        outputColor = tree[key].testTitles[i].failureMessages.length === 0
-          ? colors.GREEN
-          : colors.RED;
-        this.log( this._formatMsg(outputText, outputColor) );
-      }
-      if (Object.keys(tree[key].childNodes).length > 0){
-        readTest.call(this, tree[key].childNodes, indentCount + 1);
-      }
-    }
-  }
-
-  var results = testResult['testResults'];
-  var tmp;
-  if (config.verbose) {
+  function createTestTree(results){
+    var tree;
     for (var i = 0; i < results.length; i++){
-      tmp = createTestNode(results[i], results[i].ancestorTitles, tmp);
+      tree = createTestNode(results[i], results[i].ancestorTitles, tree);
     }
-    readTest.call(this, tmp.childNodes);
+
+    return tree;
+  }
+
+  function preOrder(node, indentation){
+    var indentationIncrement;
+    if (typeof node === 'undefined' || node === null){ return; }
+
+    indentationIncrement = '  ';
+    indentation = indentation || '';
+
+    if (node.testTitles){
+      printTestTitles.call(this, node.testTitles, indentation);
+      preOrder.call(this, node.childNodes, indentation);
+    } else {
+      for (var key in node){
+        this.log(indentation + key);
+        preOrder.call(this, node[key], indentation + indentationIncrement);
+      }
+    }
+  }
+
+  function printTestTitles(testTitles, indentation){
+    var outputColor;
+
+    for (var i = 0; i < testTitles.length; i++){
+      outputColor = testTitles[i].failureMessages.length === 0
+        ? colors.GREEN
+        : colors.RED;
+      this.log(this._formatMsg(indentation + testTitles[i].title, outputColor));
+    }
+  }
+
+  if (config.verbose) {
+    var tree = createTestTree(testResult['testResults']);
+    preOrder.call(this, tree.childNodes)
   } else {
     this.log(this._getResultHeader(allTestsPassed, pathStr, [
       testRunTimeString
