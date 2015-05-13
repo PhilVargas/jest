@@ -204,5 +204,8 @@ describe('TestRunner', function() {
           expect(relatedTests).toEqual([existingTestPath]);
         });
     });
+    describe('_isTestFilePath', function(){it('is in streamTestPathsRelatedTo', function(){expect(true).toBeTruthy()})})
   });
+    describe('_isTestFilePath', function(){it('is in the first testfilepath', function(){expect(false).toBeTruthy()})})
+    describe('testTitles', function(){it('does not break for having title testTitles', function(){expect(false).toBeTruthy()})})
 });
